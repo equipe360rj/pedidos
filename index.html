@@ -13,44 +13,42 @@
         }
         .container { max-width: 500px; margin: auto; }
         
-        /* Estilo dos Inputs */
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #ccc; }
         input { 
             width: 100%; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
             background: rgba(255,255,255,0.1); color: white; box-sizing: border-box; font-size: 16px; outline: none;
             margin-bottom: 15px;
         }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,210,255,0.5); }
 
-        /* Lista de Resultados */
-        .resultado-item { 
-            background: rgba(255,255,255,0.05); margin-top: 10px; padding: 15px; 
-            border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-            transition: 0.2s; border: 1px solid transparent;
-        }
-        .resultado-item:hover { background: rgba(255,255,255,0.15); border-color: var(--primary); }
-        .seta { color: var(--primary); font-size: 20px; font-weight: bold; }
-
-        /* Formulário de Envio */
-        #sessao-confirmacao { 
-            display: none; background: rgba(0,0,0,0.4); padding: 25px; border-radius: 20px; 
-            border: 1px solid var(--primary); margin-top: 20px; animation: fadeIn 0.4s;
-        }
-        .musica-badge { 
-            background: linear-gradient(45deg, #24243e, var(--accent)); 
-            padding: 15px; border-radius: 10px; margin-bottom: 25px; 
-            display: block; font-size: 1em; border-left: 4px solid var(--primary);
-        }
-
+        /* Botões */
         button { 
             width: 100%; padding: 15px; border-radius: 12px; border: none; 
             background: linear-gradient(45deg, var(--primary), var(--accent));
             color: white; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 10px;
         }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-lista { background: rgba(255,255,255,0.1); border: 1px solid var(--primary); font-size: 14px; margin-top: 5px; }
         .btn-voltar { width: auto; padding: 8px 15px; font-size: 13px; background: #444; margin-bottom: 15px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Lista de Resultados */
+        .resultado-item { 
+            background: rgba(255,255,255,0.05); margin-top: 10px; padding: 15px; 
+            border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        }
+        .seta { color: var(--primary); font-size: 20px; }
+
+        /* Modal Lista Completa */
+        #modal-lista {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box;
+        }
+
+        .musica-badge { 
+            background: linear-gradient(45deg, #24243e, var(--accent)); 
+            padding: 15px; border-radius: 10px; margin-bottom: 25px; border-left: 4px solid var(--primary);
+        }
+
+        #sessao-confirmacao { display: none; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -61,27 +59,31 @@
     <div id="sessao-busca">
         <label>Pesquise sua música:</label>
         <input type="text" id="inputBusca" placeholder="Ex: Artista ou nome da música..." oninput="filtrar()">
+        
+        <button class="btn-lista" onclick="abrirListaCompleta()">📂 Ver Lista Completa (A-Z)</button>
+        
         <div id="listaResultados"></div>
     </div>
 
     <div id="sessao-confirmacao">
         <button class="btn-voltar" onclick="voltar()">← Mudar Música</button>
-        <h3 style="margin-top:0">Confirmar Pedido</h3>
-        
-        <label>Música Selecionada:</label>
+        <h3>Confirmar Pedido</h3>
         <div class="musica-badge" id="displayMusica"></div>
-
-        <label>Seu Nome (Cantor):</label>
-        <input type="text" id="nomeCantor" placeholder="Como quer ser chamado?">
-
+        <label>Seu Nome:</label>
+        <input type="text" id="nomeCantor" placeholder="Quem vai cantar?">
         <button id="btnEnviar" onclick="finalizarPedido()">ENVIAR PEDIDO</button>
     </div>
 
-    <div id="feedback" style="text-align:center; display:none; padding: 30px; animation: fadeIn 0.5s;">
+    <div id="feedback" style="text-align:center; display:none; padding: 30px;">
         <h2 style="color:#00ff88;">✅ SUCESSO!</h2>
-        <p>Seu pedido foi para a fila.</p>
-        <p style="font-size: 0.8em; color: #aaa;">Aguarde sua vez...</p>
+        <p>Pedido enviado para a planilha.</p>
     </div>
+</div>
+
+<div id="modal-lista">
+    <button class="btn-voltar" onclick="fecharLista()">✕ Fechar Lista</button>
+    <h2>Lista Completa</h2>
+    <div id="conteudo-lista-completa"></div>
 </div>
 
 <script>
@@ -89,42 +91,52 @@
     let musicaSelecionada = "";
     const urlAPI = 'https://script.google.com/macros/s/AKfycbzlc_RB5pzAFN7nHjZtUw4u6J6hnGBn9mF1huRWC_hIjbOiS2Pom4WQVdTNG4zoXeGU/exec';
 
-    // Carrega o arquivo dados.json
     fetch('dados.json')
         .then(res => res.json())
-        .then(data => { 
-            baseDeDados = data; 
-            console.log("Banco de dados carregado.");
-        })
-        .catch(err => {
-            alert("Erro ao carregar lista de músicas. Verifique se o arquivo dados.json existe.");
-        });
+        .then(data => { baseDeDados = data.sort(); }); // Ordena de A-Z
 
     function filtrar() {
         const termo = document.getElementById('inputBusca').value.toLowerCase();
         const lista = document.getElementById('listaResultados');
         lista.innerHTML = '';
-
         if (termo.length < 2) return;
 
-        // Filtra os itens do seu array de strings
         const filtradas = baseDeDados.filter(m => m.toLowerCase().includes(termo)).slice(0, 12);
-
         filtradas.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'resultado-item';
-            div.innerHTML = `<span>${m}</span> <span class="seta">➔</span>`;
-            div.onclick = () => prepararEnvio(m);
+            const div = criaItemLista(m);
             lista.appendChild(div);
         });
     }
+
+    function criaItemLista(m) {
+        const div = document.createElement('div');
+        div.className = 'resultado-item';
+        div.innerHTML = `<span>${m}</span> <span class="seta">➔</span>`;
+        div.onclick = () => {
+            fecharLista();
+            prepararEnvio(m);
+        };
+        return div;
+    }
+
+    function abrirListaCompleta() {
+        const divCompleta = document.getElementById('conteudo-lista-completa');
+        divCompleta.innerHTML = '';
+        document.getElementById('modal-lista').style.display = 'block';
+        
+        // Renderiza toda a lista (cuidado se o arquivo for GIGANTE, mas para karaokê costuma funcionar)
+        baseDeDados.forEach(m => {
+            divCompleta.appendChild(criaItemLista(m));
+        });
+    }
+
+    function fecharLista() { document.getElementById('modal-lista').style.display = 'none'; }
 
     function prepararEnvio(musica) {
         musicaSelecionada = musica;
         document.getElementById('displayMusica').innerText = musica;
         document.getElementById('sessao-busca').style.display = 'none';
         document.getElementById('sessao-confirmacao').style.display = 'block';
-        window.scrollTo(0,0);
     }
 
     function voltar() {
@@ -134,39 +146,20 @@
 
     async function finalizarPedido() {
         const nome = document.getElementById('nomeCantor').value;
-        const btn = document.getElementById('btnEnviar');
+        if (!nome) return alert("Digite seu nome!");
+        
+        document.getElementById('btnEnviar').disabled = true;
+        document.getElementById('btnEnviar').innerText = "ENVIANDO...";
 
-        if (!nome || nome.trim().length < 2) {
-            alert("Por favor, digite seu nome para o sorteio!");
-            return;
-        }
+        await fetch(urlAPI, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ musica: musicaSelecionada, cantor: nome })
+        });
 
-        btn.disabled = true;
-        btn.innerText = "ENVIANDO...";
-
-        try {
-            await fetch(urlAPI, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({
-                    musica: musicaSelecionada,
-                    cantor: nome
-                })
-            });
-
-            document.getElementById('sessao-confirmacao').style.display = 'none';
-            document.getElementById('feedback').style.display = 'block';
-
-            // Recarrega após 4 segundos para o próximo usuário
-            setTimeout(() => {
-                location.reload();
-            }, 4000);
-
-        } catch (error) {
-            alert("Houve um erro de conexão. Tente novamente.");
-            btn.disabled = false;
-            btn.innerText = "ENVIAR PEDIDO";
-        }
+        document.getElementById('sessao-confirmacao').style.display = 'none';
+        document.getElementById('feedback').style.display = 'block';
+        setTimeout(() => location.reload(), 3000);
     }
 </script>
 
