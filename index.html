@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaokê - Pedir Música</title>
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --accent: #9d50bb;
+            --bg: #0f0c29;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ccc;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        /* Botões */
+        button {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* .btn-lista {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--primary);
+            font-size: 14px;
+            margin-top: 5px;
+        } */
+
+        #btn-install {
+            display: none;
+            background: linear-gradient(45deg, #00b09b, #96c93d);
+            margin-top: 20px;
+        }
+
+        .btn-voltar {
+            /* width: auto; */
+            /* padding: 8px 15px; */
+            /* font-size: 13px; */
+            background: linear-gradient(45deg, #777, #444);
+            /* Keep it distinct but styled? Or just same? User said "estilo do primeiro" which is the gradient one. */
+            /* margin-bottom: 15px; */
+        }
+
+        /* Better to just remove the overrides that conflict with the "first button" look, 
+           but the user probably wants the colorful gradient. 
+           Let's just comment out the whole .btn-voltar block or set it to inherit.
+           Actually, the "first button" style is defined in `button {}`. 
+           So if I remove these classes, they get that style. 
+        */
+
+        /* Removed specific button classes to unification */
+
+        /* Lista de Resultados */
+        .resultado-item {
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .seta {
+            color: var(--primary);
+            font-size: 20px;
+        }
+
+        /* Modal Lista Completa */
+        #modal-lista {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 100;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .musica-badge {
+            background: linear-gradient(45deg, #24243e, var(--accent));
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--primary);
+        }
+
+        #sessao-confirmacao {
+            display: none;
+            animation: fadeIn 0.4s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .mobile-break {
+                display: block;
+            }
+        }
+
+        /* Modal de Alerta Customizado */
+        #custom-alert {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+
+        .alert-box {
+            background: #24243e;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid var(--primary);
+            text-align: center;
+            max-width: 85%;
+            width: 350px;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+        }
+
+        .alert-title {
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .alert-msg {
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="custom-alert">
+        <div class="alert-box">
+            <div class="alert-title" id="alert-title">ATENÇÃO!!!</div>
+            <div class="alert-msg" id="alert-msg">Mensagem aqui</div>
+            <button onclick="fecharAlerta()">OK, ENTENDI</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 style="text-align: center; letter-spacing: 3px; text-shadow: 0 0 10px var(--primary);">KARAOKÊ <span
+                class="mobile-break">EQUIPE 360 RJ</span></h1>
+
+        <div id="sessao-busca">
+            <label>Pesquise sua música:</label>
+            <input type="text" id="inputBusca" placeholder="Ex: Artista ou nome da música..." oninput="filtrar()">
+
+            <button class="btn-lista" onclick="abrirListaCompleta()">📂 Ver Lista Completa (A-Z)</button>
+            <button class="btn-lista" onclick="toggleAjuda()">❓ Não encontrou sua música? Clique aqui</button>
+
+            <p id="msg-ajuda"
+                style="display: none; font-size: 16px; color: white; font-weight: bold; margin-top: 20px; text-align: center; line-height: 1.4; background: rgba(0, 210, 255, 0.15); border: 2px solid var(--primary); padding: 15px; border-radius: 12px;">
+                Caso não encontre a sua música, escolha uma qualquer e peça para o KJ presente a sua música correta.
+                Dessa forma, você não perde seu lugar na fila.
+            </p>
+
+            <button id="btn-install" onclick="instalarApp()">📲 Adicionar App à Tela Inicial</button>
+            <button id="btn-share-qr" class="btn-lista btn-share" style="display:none;" onclick="mostrarQRCode()">🔗
+                Compartilhar com QR Code</button>
+
+            <div id="qr-container"
+                style="display:none; text-align: center; margin-top: 20px; background: white; padding: 20px; border-radius: 12px; width: fit-content; margin-left: auto; margin-right: auto;">
+                <div id="qrcode"></div>
+                <p style="color: black; margin-top: 10px; font-weight: bold;">Escaneie para abrir</p>
+                <button class="btn-voltar" onclick="document.getElementById('qr-container').style.display='none'"
+                    style="margin-bottom: 0;">Fechar</button>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
+                <p style="color: #ccc; font-weight: bold; margin-bottom: 10px;">Siga a Equipe 360 RJ nas redes sociais
+                </p>
+                <div style="font-size: 30px;">
+                    <a href="https://www.instagram.com/equipe360rj/" target="_blank" style="text-decoration: none;">
+                        <i class="fab fa-instagram" style="color: #E1306C; margin-right: 15px; cursor: pointer;"></i>
+                    </a>
+                    <a href="https://www.facebook.com/equipe360rj/" target="_blank" style="text-decoration: none;">
+                        <i class="fab fa-facebook" style="color: #1877F2; cursor: pointer;"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div id="loading" style="display:none; text-align:center; padding:10px; color: var(--primary);">↻ Carregando
+                dados...</div>
+
+            <div id="listaResultados"></div>
+        </div>
+
+        <div id="sessao-confirmacao">
+            <button class="btn-voltar" onclick="voltar()">← Mudar Música</button>
+            <h3>Confirmar Pedido</h3>
+            <div class="musica-badge" id="displayMusica"></div>
+            <label>Seu Nome:</label>
+            <input type="text" id="nomeCantor" placeholder="Quem vai cantar?">
+            <button id="btnEnviar" onclick="finalizarPedido()">ENVIAR PEDIDO</button>
+        </div>
+
+        <div id="feedback" style="text-align:center; display:none; padding: 30px;">
+            <h2 style="color:#00ff88;">✅ SUCESSO!</h2>
+            <p>Pedido enviado para o Karaokê.</p>
+        </div>
+    </div>
+
+    <div id="modal-lista">
+        <button class="btn-voltar" onclick="fecharLista()">✕ Fechar Lista</button>
+        <h2>Lista Completa</h2>
+        <div id="conteudo-lista-completa"></div>
+        <button id="btn-carregar-mais" class="btn-lista" style="display:none; margin-top: 20px;"
+            onclick="renderizarProximaPagina()">⬇ Carregar Mais</button>
+    </div>
+
+    <script>
+        function toggleAjuda() {
+            var x = document.getElementById("msg-ajuda");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }
+        let baseDeDados = [];
+        let musicaSelecionada = "";
+        const urlAPI = 'https://script.google.com/macros/s/AKfycbzlc_RB5pzAFN7nHjZtUw4u6J6hnGBn9mF1huRWC_hIjbOiS2Pom4WQVdTNG4zoXeGU/exec';
+        let deferredPrompt;
+
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW registrado!', reg))
+                    .catch(err => console.log('Falha no SW:', err));
+            });
+        }
+
+        // PWA Install Prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnInstall = document.getElementById('btn-install');
+            btnInstall.style.display = 'block';
+        });
+
+        async function instalarApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const result = await deferredPrompt.userChoice;
+                console.log('User choice:', result);
+                deferredPrompt = null;
+                document.getElementById('btn-install').style.display = 'none';
+            }
+        }
+
+        // Verifica se está rodando como PWA (Standalone)
+        function checkStandalone() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true ||
+                (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
+                (window.matchMedia && window.matchMedia('(display-mode: minimal-ui)').matches);
+
+            if (isStandalone) {
+                document.getElementById('btn-share-qr').style.display = 'block';
+            }
+        }
+
+        window.addEventListener('load', checkStandalone);
+        window.addEventListener('DOMContentLoaded', checkStandalone);
+
+        function mostrarQRCode() {
+            const container = document.getElementById('qr-container');
+            const qrDiv = document.getElementById('qrcode');
+
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                qrDiv.innerHTML = ""; // Limpa anterior
+                new QRCode(qrDiv, {
+                    text: window.location.href,
+                    width: 128,
+                    height: 128
+                });
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // Variáveis de paginação
+        let paginaAtual = 0;
+        const itensPorPagina = 100;
+
+        // Carregamento inicial
+        const loadingDiv = document.getElementById('loading');
+        loadingDiv.style.display = 'block';
+
+        fetch('dados.json?v=' + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                baseDeDados = data.sort();
+                loadingDiv.style.display = 'none';
+            })
+            .catch(err => {
+                console.error("Erro ao carregar dados:", err);
+                loadingDiv.innerText = "Erro ao carregar lista de músicas.";
+            });
+
+        // Funções de UI
+        function mostrarAlerta(titulo, mensagem) {
+            document.getElementById('alert-title').innerText = titulo;
+            document.getElementById('alert-msg').innerText = mensagem;
+            document.getElementById('custom-alert').style.display = 'flex';
+        }
+
+        function fecharAlerta() {
+            document.getElementById('custom-alert').style.display = 'none';
+        }
+
+        function filtrar() {
+            const termo = document.getElementById('inputBusca').value.toLowerCase();
+            const lista = document.getElementById('listaResultados');
+
+            lista.innerHTML = '';
+            if (termo.length < 2) return;
+
+            const filtradas = baseDeDados.filter(m => m.toLowerCase().includes(termo)).slice(0, 15);
+            filtradas.forEach(m => {
+                const div = criaItemLista(m);
+                lista.appendChild(div);
+            });
+        }
+
+        function criaItemLista(m) {
+            const div = document.createElement('div');
+            div.className = 'resultado-item';
+            div.innerHTML = `<span>${m}</span> <span class="seta">➔</span>`;
+            div.onclick = () => {
+                fecharLista();
+                prepararEnvio(m);
+            };
+            return div;
+        }
+
+        function abrirListaCompleta() {
+            document.getElementById('modal-lista').style.display = 'block';
+            paginaAtual = 0;
+            document.getElementById('conteudo-lista-completa').innerHTML = '';
+            renderizarProximaPagina();
+        }
+
+        function renderizarProximaPagina() {
+            const divCompleta = document.getElementById('conteudo-lista-completa');
+            const btnMais = document.getElementById('btn-carregar-mais');
+            const inicio = paginaAtual * itensPorPagina;
+            const fim = inicio + itensPorPagina;
+            const itensParaRenderizar = baseDeDados.slice(inicio, fim);
+
+            itensParaRenderizar.forEach(m => {
+                divCompleta.appendChild(criaItemLista(m));
+            });
+
+            paginaAtual++;
+
+            if (baseDeDados.length > fim) {
+                btnMais.style.display = 'block';
+                btnMais.innerText = `⬇ Carregar Mais (${baseDeDados.length - fim} restantes)`;
+            } else {
+                btnMais.style.display = 'none';
+            }
+        }
+
+        function fecharLista() { document.getElementById('modal-lista').style.display = 'none'; }
+
+        function prepararEnvio(musica) {
+            musicaSelecionada = musica;
+            document.getElementById('displayMusica').innerText = musica;
+            document.getElementById('sessao-busca').style.display = 'none';
+            document.getElementById('sessao-confirmacao').style.display = 'block';
+        }
+
+        function voltar() {
+            document.getElementById('sessao-busca').style.display = 'block';
+            document.getElementById('sessao-confirmacao').style.display = 'none';
+        }
+
+        async function finalizarPedido() {
+            const nome = document.getElementById('nomeCantor').value;
+            if (!nome) return mostrarAlerta("ATENÇÃO!!!", "Digite seu nome para continuar!");
+
+            // Anti-Spam Check
+            const ultimoPedido = localStorage.getItem('ultimoPedido');
+            if (ultimoPedido) {
+                const diff = new Date().getTime() - parseInt(ultimoPedido);
+                const cooldown = 120000; // 120 segundos
+                if (diff < cooldown) {
+                    const segundosRestantes = Math.ceil((cooldown - diff) / 1000);
+                    mostrarAlerta("AGUARDE...", `⏳ Por favor, aguarde ${segundosRestantes} segundos para fazer outro pedido.`);
+                    return;
+                }
+            }
+
+            document.getElementById('btnEnviar').disabled = true;
+            document.getElementById('btnEnviar').innerText = "ENVIANDO...";
+
+            try {
+                await fetch(urlAPI, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ musica: musicaSelecionada, cantor: nome })
+                });
+
+                localStorage.setItem('ultimoPedido', new Date().getTime());
+                document.getElementById('sessao-confirmacao').style.display = 'none';
+                document.getElementById('feedback').style.display = 'block';
+
+                setTimeout(() => location.reload(true), 3000);
+            } catch (error) {
+                mostrarAlerta("ERRO", "Erro ao enviar pedido. Tente novamente.");
+                document.getElementById('btnEnviar').disabled = false;
+                document.getElementById('btnEnviar').innerText = "ENVIAR PEDIDO";
+            }
+        }
+    </script>
+
+</body>
+
+</html>
