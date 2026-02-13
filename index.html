@@ -289,8 +289,27 @@
         }
         let baseDeDados = [];
         let musicaSelecionada = "";
-        const urlAPI = 'https://script.google.com/macros/s/AKfycbzlc_RB5pzAFN7nHjZtUw4u6J6hnGBn9mF1huRWC_hIjbOiS2Pom4WQVdTNG4zoXeGU/exec';
+        const urlAPI = 'https://script.google.com/macros/s/AKfycbybAJ1AgrHNpVSbEqgV4BfX_stfQb0mYH36EdpR92ZUFvxSLJTCD0KUQLI9mdV2p9w/exec';
+        const dataUpdate = '12/02/2026 23:56';
         let deferredPrompt;
+
+        // Display Version Footer
+        window.addEventListener('load', () => {
+            try {
+                // Pega os 5 caracteres antes do /exec
+                const cleanUrl = urlAPI.replace('/exec', '');
+                const version = cleanUrl.slice(-5);
+                const dateDisplay = dataUpdate || '-';
+
+                const footerHtml = `
+                    <div style="text-align: center; margin-top: 40px; font-size: 11px; color: rgba(255,255,255,0.3);">
+                        API: ...${version} <br> 
+                        Update: ${dateDisplay}
+                    </div>
+                `;
+                document.querySelector('.container').insertAdjacentHTML('beforeend', footerHtml);
+            } catch (e) { console.log(e); }
+        });
 
         // PWA Service Worker
         if ('serviceWorker' in navigator) {
@@ -362,13 +381,33 @@
         fetch('dados.json?v=' + new Date().getTime())
             .then(res => res.json())
             .then(data => {
-                baseDeDados = data.sort();
+                // Suporte Híbrido: Combina formato novo (Objeto) e antigo (Array)
+                if (Array.isArray(data)) {
+                    baseDeDados = data.sort();
+                    dataUpdateBase = "Desconhecida (Formato Antigo)";
+                } else if (data.lista) {
+                    baseDeDados = data.lista.sort();
+                    dataUpdateBase = data.data_atualizacao || "-";
+                }
+
                 loadingDiv.style.display = 'none';
+
+                // Atualiza o rodapé com a data da base
+                atualizarRodapeBase(dataUpdateBase);
             })
             .catch(err => {
                 console.error("Erro ao carregar dados:", err);
                 loadingDiv.innerText = "Erro ao carregar lista de músicas.";
             });
+
+        function atualizarRodapeBase(data) {
+            const footerHtml = `
+                <div style="text-align: center; margin-top: 5px; font-size: 11px; color: rgba(255,255,255,0.3);">
+                    Base de Músicas: ${data}
+                </div>
+            `;
+            document.querySelector('.container').insertAdjacentHTML('beforeend', footerHtml);
+        }
 
         // Funções de UI
         function mostrarAlerta(titulo, mensagem) {
