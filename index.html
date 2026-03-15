@@ -208,8 +208,8 @@
     </div>
 
     <div class="container">
-        <h1 style="text-align: center; letter-spacing: 3px; text-shadow: 0 0 10px var(--primary);">KARAOKÊ <span
-                class="mobile-break">EQUIPE 360 RJ</span></h1>
+        <h1 style="text-align: center; letter-spacing: 3px; text-shadow: 0 0 10px var(--primary);">PEÇA SUA <span
+                class="mobile-break">MÚSICA</span></h1>
 
         <div id="sessao-busca">
             <label>Pesquise sua música:</label>
@@ -236,18 +236,7 @@
                     style="margin-bottom: 0;">Fechar</button>
             </div>
 
-            <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
-                <p style="color: #ccc; font-weight: bold; margin-bottom: 10px;">Siga a Equipe 360 RJ nas redes sociais
-                </p>
-                <div style="font-size: 30px;">
-                    <a href="https://www.instagram.com/equipe360rj/" target="_blank" style="text-decoration: none;">
-                        <i class="fab fa-instagram" style="color: #E1306C; margin-right: 15px; cursor: pointer;"></i>
-                    </a>
-                    <a href="https://www.facebook.com/equipe360rj/" target="_blank" style="text-decoration: none;">
-                        <i class="fab fa-facebook" style="color: #1877F2; cursor: pointer;"></i>
-                    </a>
-                </div>
-            </div>
+
 
             <div id="loading" style="display:none; text-align:center; padding:10px; color: var(--primary);">↻ Carregando
                 dados...</div>
@@ -290,7 +279,7 @@
         let baseDeDados = [];
         let musicaSelecionada = "";
         const urlAPI = 'https://script.google.com/macros/s/AKfycbybAJ1AgrHNpVSbEqgV4BfX_stfQb0mYH36EdpR92ZUFvxSLJTCD0KUQLI9mdV2p9w/exec';
-        const dataUpdate = '13/02/2026 00:12';
+        const dataUpdate = '15/03/2026 02:30';
         let deferredPrompt;
 
         // Display Version Footer
@@ -495,7 +484,7 @@
             const ultimoPedido = localStorage.getItem('ultimoPedido');
             if (ultimoPedido) {
                 const diff = new Date().getTime() - parseInt(ultimoPedido);
-                const cooldown = 120000; // 120 segundos
+                const cooldown = 5000; // 5 segundos
                 if (diff < cooldown) {
                     const segundosRestantes = Math.ceil((cooldown - diff) / 1000);
                     mostrarAlerta("AGUARDE...", `⏳ Por favor, aguarde ${segundosRestantes} segundos para fazer outro pedido.`);
